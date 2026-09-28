@@ -1,8 +1,10 @@
 #pragma once
 #include <map>
 #include <deque>
+#include <vector>
 #include <functional>
 #include "order.hpp"
+#include "trade.hpp"
 
 class OrderBook {
 private:
@@ -12,4 +14,5 @@ private:
 public:
     void inserir(const Ordem& o);
     void imprimir() const;
+    std::vector<Trade> executarMarket(Side side, int qty);
 };
