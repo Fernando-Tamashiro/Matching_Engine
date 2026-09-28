@@ -104,6 +104,51 @@ int main() {
             // sem limite; a sobra e descartada
             imprimirTrades(book.executar(side, qty, false, 0));
 
+        } else if (comando == "peg") {
+            std::string refTexto, sideTexto, sobra;
+            int qty;
+            Side side;
+
+            // 1. forma correta: peg <bid|offer> <buy|sell> <qty>
+            if (!(iss >> refTexto >> sideTexto >> qty)) {
+                std::cout << "Erro: uso correto e 'peg <bid|offer> <buy|sell> <qty>'\n";
+                continue;
+            }
+            if (iss >> sobra) {
+                std::cout << "Erro: texto a mais no fim da linha\n";
+                continue;
+            }
+
+            // 2. so as duas combinacoes que nao nascem cruzando o livro
+            if (refTexto == "bid" && sideTexto == "buy") {
+                side = Side::Buy;
+            } else if (refTexto == "offer" && sideTexto == "sell") {
+                side = Side::Sell;
+            } else {
+                std::cout << "Erro: so sao aceitas 'peg bid buy' e 'peg offer sell'\n";
+                continue;
+            }
+            if (qty <= 0) {
+                std::cout << "Erro: quantidade invalida\n";
+                continue;
+            }
+
+            // 3. precisa existir uma referencia para tirar o preco
+            long long preco;
+            if (!book.referenciaPegged(side, preco)) {
+                std::cout << "Erro: sem preco de referencia no livro\n";
+                continue;
+            }
+
+            // 4. entra no livro no preco da referencia. Nao precisa de matching:
+            //    o melhor bid nunca alcanca o melhor offer, entao ela nunca cruza.
+            Ordem o{std::to_string(proximoId), side, preco, qty, proximoSeq, true};
+            proximoId++;
+            proximoSeq++;
+            std::cout << "Order created: " << sideTexto << " " << qty << " @ "
+                      << formatarPreco(preco) << " " << o.id << "\n";
+            book.inserir(o);
+
         } else if (comando == "cancel") {
             std::string palavra, id, sobra;
 
@@ -145,10 +190,14 @@ int main() {
                 continue;
             }
 
-            // 2. a ordem existe no livro?
+            // 2. a ordem existe no livro? e nao e pegged?
             Ordem atual{};
             if (!book.buscar(id, atual)) {
                 std::cout << "Erro: ordem " << id << " nao encontrada\n";
+                continue;
+            }
+            if (atual.pegged) {
+                std::cout << "Erro: ordens pegged nao podem ser alteradas\n";
                 continue;
             }
 
@@ -175,6 +224,10 @@ int main() {
         } else {
             std::cout << "Comando desconhecido: " << comando << "\n";
         }
+
+        // qualquer comando pode ter mudado as referencias: as pegged se ajustam.
+        // (os erros usam continue e pulam esta linha, porque nao mudaram o livro)
+        book.reprecificarPegged(proximoSeq);
     }
     return 0;
 }

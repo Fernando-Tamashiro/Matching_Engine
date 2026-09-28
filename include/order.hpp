@@ -9,4 +9,5 @@ struct Ordem {
     long long preco;   // em centavos: 10.10 -> 1010
     int qty;
     long long seq;     // ordem de chegada
+    bool pegged = false;
 };

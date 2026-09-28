@@ -1,0 +1,22 @@
+limit buy 10 200
+limit buy 9.99 100
+limit sell 10.5 100
+print book
+peg bid buy 150
+print book
+limit buy 10.1 300
+print book
+limit buy 10 50
+cancel order 5
+print book
+peg offer sell 80
+limit sell 10.4 20
+print book
+market buy 90
+peg bid sell 10
+modify order 4 10 100
+cancel order 1
+cancel order 6
+cancel order 2
+print book
+peg bid buy 10

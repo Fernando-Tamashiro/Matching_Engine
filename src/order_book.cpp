@@ -3,13 +3,25 @@
 #include <iostream>
 #include <vector>
 #include <iomanip>
+#include <iterator>
 #include <algorithm>
 
 void OrderBook::inserir(const Ordem& o) {
+    auto colocar = [&](auto& lado) {
+        std::deque<Ordem>& fila = lado[o.preco];
+        // entra na fila pela ordem de chegada (seq). Uma ordem nova tem o maior seq
+        // e vai direto para o fim; uma pegged repreçada pode ter seq antigo e entrar no meio.
+        auto pos = fila.end();
+        while (pos != fila.begin() && std::prev(pos)->seq > o.seq) {
+            --pos;
+        }
+        fila.insert(pos, o);
+    };
+
     if (o.side == Side::Buy) {
-        compras[o.preco].push_back(o);
+        colocar(compras);
     } else {
-        vendas[o.preco].push_back(o);
+        colocar(vendas);
     }
     // ordem entrou no livro: o indice anota onde ela esta
     indice[o.id] = {o.side, o.preco};
@@ -159,4 +171,67 @@ bool OrderBook::reduzirQuantidade(const std::string& id, int novaQty) {
     };
 
     return local.side == Side::Buy ? reduzir(compras) : reduzir(vendas);
+}
+
+bool OrderBook::referenciaPegged(Side side, long long& saida) const {
+    // melhor preco do lado entre as ordens que NAO sao pegged.
+    // ignorar as pegged evita que uma pegged siga a si mesma.
+    auto procurar = [&](const auto& lado) {
+        for (const auto& [preco, fila] : lado) {
+            for (const Ordem& o : fila) {
+                if (!o.pegged) {
+                    saida = preco;
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+
+    return side == Side::Buy ? procurar(compras) : procurar(vendas);
+}
+
+void OrderBook::reprecificarPegged(long long& proximoSeq) {
+    auto ajustar = [&](auto& lado, Side side) {
+        // 1. qual e a referencia agora?
+        long long referencia;
+        if (!referenciaPegged(side, referencia)) return;   // sem referencia: ficam congeladas
+
+        // 2. tira do livro as pegged que estao fora da referencia
+        std::vector<Ordem> mover;
+        for (auto nivel = lado.begin(); nivel != lado.end(); ) {
+            std::deque<Ordem>& fila = nivel->second;
+            if (nivel->first != referencia) {
+                for (auto pos = fila.begin(); pos != fila.end(); ) {
+                    if (pos->pegged) {
+                        mover.push_back(*pos);
+                        pos = fila.erase(pos);
+                    } else {
+                        ++pos;
+                    }
+                }
+            }
+            if (fila.empty()) {
+                nivel = lado.erase(nivel);
+            } else {
+                ++nivel;
+            }
+        }
+
+        // 3. recoloca no preco da referencia
+        for (Ordem& o : mover) {
+            // piorou para a contraparte? compra descendo ou venda subindo
+            bool piorou = (side == Side::Buy) ? referencia < o.preco : referencia > o.preco;
+            o.preco = referencia;
+            if (piorou) {
+                o.seq = proximoSeq;   // perde a prioridade: vai para o fim
+                proximoSeq++;
+            }
+            // melhorou: mantem o seq original, e o inserir coloca na posicao certa
+            inserir(o);
+        }
+    };
+
+    ajustar(compras, Side::Buy);
+    ajustar(vendas, Side::Sell);
 }

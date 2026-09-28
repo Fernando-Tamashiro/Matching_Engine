@@ -27,4 +27,6 @@ public:
     bool cancelar(const std::string& id);
     bool buscar(const std::string& id, Ordem& saida) const;
     bool reduzirQuantidade(const std::string& id, int novaQty);
+    bool referenciaPegged(Side side, long long& saida) const;
+    void reprecificarPegged(long long& proximoSeq);
 };
