@@ -14,6 +14,18 @@ struct Ordem {
     long long seq;     // ordem de chegada
 };
 
+std::string formatarPreco(long long centavos) {
+    std::string s = std::to_string(centavos / 100);
+    long long resto = centavos % 100;
+    if (resto != 0) {
+        s += ".";
+        if (resto < 10) s += "0";
+        s += std::to_string(resto);
+        if (s.back() == '0') s.pop_back();
+    }
+    return s;
+}
+
 class OrderBook {
 private:
     std::map<long long, std::deque<Ordem>, std::greater<long long>> compras;
@@ -21,12 +33,20 @@ private:
 
 public:
     void inserir(const Ordem& o) {
-        // sua parte
+        if (o.side == Side::Buy) {
+            compras[o.preco].push_back(o);
+        } else {
+            vendas[o.preco].push_back(o);
+        }
     }
 
     void imprimir() const {
-        // sua parte
-    }
+        for (const auto& [preco, fila] : compras) {
+            for (const auto& o : fila) {
+                std::cout << o.qty << " @ " << formatarPreco(preco) << "\n";
+            }
+        }
+    }   
 };
 
 int main() {
