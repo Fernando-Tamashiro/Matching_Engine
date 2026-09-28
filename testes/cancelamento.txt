@@ -1,0 +1,14 @@
+limit buy 10 100
+limit buy 10 200
+limit sell 11 50
+cancel order 1
+print book
+cancel order 1
+market sell 150
+cancel order 2
+cancel order 3
+print book
+limit buy 10 30
+market sell 30
+cancel order 4
+cancel order 99

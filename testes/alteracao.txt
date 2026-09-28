@@ -1,0 +1,16 @@
+limit buy 10 200
+limit buy 9.99 100
+limit sell 10.5 100
+print book
+modify order 1 9.98 200
+print book
+limit buy 9.99 50
+limit buy 9.99 30
+modify order 2 9.99 80
+market sell 80
+modify order 4 9.99 60
+print book
+modify order 1 10.5 200
+print book
+modify order 99 10 10
+modify order 5 10 0

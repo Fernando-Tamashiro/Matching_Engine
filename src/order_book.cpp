@@ -11,6 +11,8 @@ void OrderBook::inserir(const Ordem& o) {
     } else {
         vendas[o.preco].push_back(o);
     }
+    // ordem entrou no livro: o indice anota onde ela esta
+    indice[o.id] = {o.side, o.preco};
 }
 
 void OrderBook::imprimir() const {
@@ -71,8 +73,11 @@ std::vector<Trade> OrderBook::executar(Side side, int& qty, bool temLimite, long
                 trades.push_back({preco, negociado});
             }
 
-            // quem zerou sai da fila; fila vazia, o preco sai do livro
-            if (primeira.qty == 0) fila.pop_front();
+            // quem zerou sai da fila (e do indice); fila vazia, o preco sai do livro
+            if (primeira.qty == 0) {
+                indice.erase(primeira.id);
+                fila.pop_front();
+            }
             if (fila.empty()) ladoOposto.erase(nivel);
         }
     };
@@ -85,4 +90,73 @@ std::vector<Trade> OrderBook::executar(Side side, int& qty, bool temLimite, long
     }
 
     return trades;
+}
+
+bool OrderBook::cancelar(const std::string& id) {
+    // 1. consulta o indice: onde essa ordem esta?
+    auto it = indice.find(id);
+    if (it == indice.end()) return false;   // nao existe, ou ja saiu do livro
+    Local local = it->second;
+
+    // 2. vai direto no lado e no preco certos, e procura dentro da fila
+    auto remover = [&](auto& lado) {
+        auto nivel = lado.find(local.preco);
+        std::deque<Ordem>& fila = nivel->second;
+        for (auto pos = fila.begin(); pos != fila.end(); ++pos) {
+            if (pos->id == id) {
+                fila.erase(pos);
+                break;
+            }
+        }
+        // 3. se a fila ficou vazia, o preco sai do livro
+        if (fila.empty()) lado.erase(nivel);
+    };
+
+    if (local.side == Side::Buy) {
+        remover(compras);
+    } else {
+        remover(vendas);
+    }
+
+    // 4. a ordem saiu: o indice esquece dela
+    indice.erase(it);
+    return true;
+}
+
+bool OrderBook::buscar(const std::string& id, Ordem& saida) const {
+    // consulta o indice e copia a ordem para quem pediu
+    auto it = indice.find(id);
+    if (it == indice.end()) return false;
+    const Local& local = it->second;
+
+    auto procurar = [&](const auto& lado) {
+        for (const Ordem& o : lado.at(local.preco)) {
+            if (o.id == id) {
+                saida = o;
+                return true;
+            }
+        }
+        return false;
+    };
+
+    return local.side == Side::Buy ? procurar(compras) : procurar(vendas);
+}
+
+bool OrderBook::reduzirQuantidade(const std::string& id, int novaQty) {
+    // muda a quantidade direto na fila: a ordem nao sai do lugar
+    auto it = indice.find(id);
+    if (it == indice.end()) return false;
+    const Local& local = it->second;
+
+    auto reduzir = [&](auto& lado) {
+        for (Ordem& o : lado.at(local.preco)) {
+            if (o.id == id) {
+                o.qty = novaQty;
+                return true;
+            }
+        }
+        return false;
+    };
+
+    return local.side == Side::Buy ? reduzir(compras) : reduzir(vendas);
 }
