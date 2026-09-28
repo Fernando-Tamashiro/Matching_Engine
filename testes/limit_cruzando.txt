@@ -1,0 +1,6 @@
+limit sell 20 100
+limit sell 25 50
+limit buy 22 200
+print book
+limit sell 21 30
+print book

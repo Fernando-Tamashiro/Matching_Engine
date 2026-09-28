@@ -14,5 +14,5 @@ private:
 public:
     void inserir(const Ordem& o);
     void imprimir() const;
-    std::vector<Trade> executarMarket(Side side, int qty);
-};
+    std::vector<Trade> executar(Side side, int& qty, bool temLimite, long long precoLimite);
+}

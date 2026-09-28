@@ -50,12 +50,24 @@ int main() {
                 continue;
             }
 
-            // 4. tudo certo: cria a ordem e coloca no livro
+            // 4. ordem aceita
             Ordem o{std::to_string(proximoSeq), side, preco, qty, proximoSeq};
             proximoSeq++;
-            book.inserir(o);
             std::cout << "Order created: " << sideTexto << " " << qty << " @ "
                       << formatarPreco(preco) << " " << o.id << "\n";
+
+            // 5. tenta casar com o outro lado, respeitando o limite
+            int restante = qty;
+            for (const Trade& t : book.executar(side, restante, true, preco)) {
+                std::cout << "Trade, price: " << formatarPreco(t.preco)
+                          << ", qty: " << t.qty << "\n";
+            }
+
+            // 6. o que sobrou vai para o livro
+            if (restante > 0) {
+                o.qty = restante;
+                book.inserir(o);
+            }
 
         } else if (comando == "market") {
             std::string sideTexto, sobra;
@@ -88,8 +100,8 @@ int main() {
                 continue;
             }
 
-            // 4. executa contra o livro e imprime os trades
-            for (const Trade& t : book.executarMarket(side, qty)) {
+            // 4. executa sem limite; a sobra e descartada
+            for (const Trade& t : book.executar(side, qty, false, 0)) {
                 std::cout << "Trade, price: " << formatarPreco(t.preco)
                           << ", qty: " << t.qty << "\n";
             }

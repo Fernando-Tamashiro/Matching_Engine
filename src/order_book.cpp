@@ -39,16 +39,23 @@ void OrderBook::imprimir() const {
     }
 }
 
-std::vector<Trade> OrderBook::executarMarket(Side side, int qty) {
+std::vector<Trade> OrderBook::executar(Side side, int& qty, bool temLimite, long long precoLimite) {
     std::vector<Trade> trades;
 
     auto consumir = [&](auto& ladoOposto) {
-        // enquanto a market ainda precisa E existe alguem do outro lado
+        // enquanto ainda precisa E existe alguem do outro lado
         while (qty > 0 && !ladoOposto.empty()) {
 
             // pega o primeiro do melhor preco
             auto nivel = ladoOposto.begin();
             long long preco = nivel->first;
+
+            // o teto da limit: se o melhor preco ja passou do limite, para
+            if (temLimite) {
+                if (side == Side::Buy && preco > precoLimite) break;
+                if (side == Side::Sell && preco < precoLimite) break;
+            }
+
             std::deque<Ordem>& fila = nivel->second;
             Ordem& primeira = fila.front();
 
@@ -68,7 +75,6 @@ std::vector<Trade> OrderBook::executarMarket(Side side, int qty) {
             if (primeira.qty == 0) fila.pop_front();
             if (fila.empty()) ladoOposto.erase(nivel);
         }
-        // se saiu do laco com qty > 0, o livro acabou: o resto e descartado
     };
 
     // compra consome as vendas; venda consome as compras
