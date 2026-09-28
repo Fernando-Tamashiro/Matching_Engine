@@ -1,5 +1,8 @@
-limit buy 10 100
-limit sell 20 100
-limit sell 20 200
-market buy 150
+limit buy 10 200
+limit buy 9.99 100
+limit sell 10.5 100
 print book
+limit buy abc 100
+limit hold 10 100
+limit buy 10 10.5
+market buy 50
