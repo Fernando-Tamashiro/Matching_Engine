@@ -25,4 +25,6 @@ public:
     void imprimir() const;
     std::vector<Trade> executar(Side side, int& qty, bool temLimite, long long precoLimite);
     bool cancelar(const std::string& id);
+    bool buscar(const std::string& id, Ordem& saida) const;
+    bool reduzirQuantidade(const std::string& id, int novaQty);
 };
