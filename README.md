@@ -10,9 +10,7 @@ Matching engine de ativo único, em memória, escrita em C++17. Suporta ordens l
 - [Estruturas de dados](#estruturas-de-dados)
 - [Regras de matching](#regras-de-matching)
 - [Decisões de projeto](#decisões-de-projeto)
-- [Complexidade](#complexidade)
 - [Testes](#testes)
-- [Limitações conhecidas](#limitações-conhecidas)
 
 ---
 
@@ -220,21 +218,6 @@ A segunda segue a mesma lógica da alteração: piorar os termos custa a posiç�
 
 ---
 
-## Complexidade
-
-P = níveis de preço de um lado, k = ordens em um nível, N = ordens no livro.
-
-| Operação | Custo |
-|---|---|
-| Melhor preço | O(1) |
-| Inserir ordem nova | O(log P) |
-| Consumir uma contraparte no matching | O(1), mais O(log P) quando um nível esvazia |
-| Cancelar, buscar, reduzir quantidade | O(1) no índice + O(log P) + O(k) dentro do nível |
-| Reposicionar pegged repreçada | O(log P) + O(k) |
-| Repreçamento ao fim de cada comando | O(N) no pior caso |
-
----
-
 ## Testes
 
 Cada arquivo em `testes/` é um cenário. A saída é conferida contra o resultado esperado.
@@ -247,14 +230,3 @@ Cada arquivo em `testes/` é um cenário. A saída é conferida contra o resulta
 | `cancelamento.txt` | cancelamento simples, duplo, de ordem parcialmente e totalmente preenchida |
 | `alteracao.txt` | exemplo do enunciado; redução mantendo prioridade; aumento perdendo prioridade; alteração que cruza o spread |
 | `pegged.txt` | exemplo do enunciado; repreçamento para cima e para baixo; espelho na venda; matching contra pegged; congelamento e rejeição sem referência |
-
----
-
-## Limitações conhecidas
-
-- **Ativo único e memória volátil**, conforme as premissas do enunciado.
-- **Duas casas decimais** no máximo para preços.
-- **Repreçamento varre o livro** a cada comando (O(N)). Uma melhoria seria manter uma lista separada das pegged de cada lado e só repreçá-las quando a referência mudar.
-- **Remoção no meio da fila** (cancelamento, alteração, reposicionamento de pegged) é linear no tamanho do nível. Uma `std::list` com iteradores guardados no índice tornaria isso O(1), ao custo de mais memória por ordem e de ter que manter os iteradores válidos.
-- **Testes por conferência de saída**, sem framework de asserção automatizada.
-- **Quantidade como `int`**, limitada a cerca de 2,1 bilhões.
